@@ -17,6 +17,7 @@ export interface CacheOptions {
   path?: string
   ttl?: number
   tbd?: number
+  walMode?: boolean
 }
 
 class Cache {
@@ -25,14 +26,16 @@ class Cache {
   tbd = 3600 // time before deletion
   path = pathJoin(process.env.TMPDIR || '/tmp', 'hdc')
 
-  constructor({ path, ttl, tbd }: CacheOptions = {}) {
+  constructor({ path, ttl, tbd, walMode = true }: CacheOptions = {}) {
     if (path) this.path = path
     fs.mkdirpSync(this.path)
     if (ttl) this.ttl = ttl
     if (tbd) this.tbd = tbd
 
     const db = new SQLite3(pathJoin(this.path, 'cache.db'))
-    db.exec('PRAGMA journal_mode = WAL')
+    if (walMode) {
+      db.exec('PRAGMA journal_mode = WAL')
+    }
     for (const s of DDL.trim().split('\n')) {
       db.prepare(s).run()
     }
